@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ForgetNot — Zero-Leak Deadline & Subscription Shield</title>
+  <style>
+    /* Reset & Base Typography */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      text-align: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Subtle Background Glow */
+    .ambient-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 750px;
+      height: 420px;
+      background: radial-gradient(circle at 50% 20%, rgba(44, 217, 146, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Floating Canvas Layer for Animated Elements */
+    .floating-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    /* ========================================================
+       1. Floating Rotating Clocks (Top Perimeter)
+       ======================================================== */
+    .clock-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid rgba(16, 185, 129, 0.22);
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clock-circle::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #10b981;
+      border-radius: 50%;
+    }
+
+    /* Clock Hands */
+    .clock-hand-hour {
+      position: absolute;
+      width: 1.5px;
+      background: #059669;
+      bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 1px;
+    }
+
+    .clock-hand-min {
+      position: absolute;
+      width: 1px;
+      background: #34d399;
+      bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 1px;
+    }
+
+    /* Clock 1: Top Left */
+    .clock-1 {
+      width: 64px;
+      height: 64px;
+      top: 36px;
+      left: 8%;
+      animation: gentleSpin 42s linear infinite, subtleFloat 7s ease-in-out infinite alternate;
+    }
+    .clock-1 .clock-hand-hour { height: 16px; animation: spinHands 14s linear infinite; }
+    .clock-1 .clock-hand-min { height: 22px; animation: spinHands 3.5s linear infinite; }
+
+    /* Clock 2: Top Right */
+    .clock-2 {
+      width: 82px;
+      height: 82px;
+      top: 50px;
+      right: 10%;
+      animation: gentleSpinReverse 50s linear infinite, subtleFloat 9s ease-in-out infinite alternate;
+    }
+    .clock-2 .clock-hand-hour { height: 22px; animation: spinHands 18s linear infinite; }
+    .clock-2 .clock-hand-min { height: 30px; animation: spinHands 4.5s linear infinite; }
+
+    /* Clock 3: Top Center High */
+    .clock-3 {
+      width: 46px;
+      height: 46px;
+      top: 18px;
+      left: 54%;
+      opacity: 0.7;
+      animation: gentleSpin 35s linear infinite, subtleFloat 6s ease-in-out infinite alternate 1s;
+    }
+    .clock-3 .clock-hand-hour { height: 11px; animation: spinHands 10s linear infinite; }
+    .clock-3 .clock-hand-min { height: 16px; animation: spinHands 2.5s linear infinite; }
+
+    /* ========================================================
+       2. Drifting Emerald Hourglasses (Left to Right)
+       ======================================================== */
+    .drifting-hourglass {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.38;
+      filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.15));
+    }
+
+    /* Hourglass 1 */
+    .hg-1 {
+      top: 14%;
+      animation: driftLeftToRight 28s linear infinite, bobVertical 5s ease-in-out infinite;
+    }
+
+    /* Hourglass 2 */
+    .hg-2 {
+      top: 48%;
+      animation: driftLeftToRight 36s linear infinite 10s, bobVertical 6.5s ease-in-out infinite;
+    }
+
+    /* Hourglass 3 */
+    .hg-3 {
+      top: 72%;
+      animation: driftLeftToRight 31s linear infinite 19s, bobVertical 4.8s ease-in-out infinite;
+    }
+
+    /* ========================================================
+       Keyframe Animations
+       ======================================================== */
+    @keyframes driftLeftToRight {
+      0% {
+        transform: translateX(-120px) rotate(0deg);
+      }
+      50% {
+        transform: translateX(calc(50vw)) rotate(180deg);
+      }
+      100% {
+        transform: translateX(calc(100vw + 120px)) rotate(360deg);
+      }
+    }
+
+    @keyframes bobVertical {
+      0%, 100% {
+        margin-top: 0px;
+      }
+      50% {
+        margin-top: -18px;
+      }
+    }
+
+    @keyframes gentleSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes gentleSpinReverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    @keyframes spinHands {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes subtleFloat {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(12px); }
+    }
+
+    /* Button Shimmer / Gleam Effect */
+    @keyframes gleamSweep {
+      0% { left: -120%; }
+      30%, 100% { left: 160%; }
+    }
+
+    /* ========================================================
+       Main Content Container
+       ======================================================== */
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
+      max-width: 780px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Pill Tag Badge */
+    .badge {
+      background: #ecfdf5;
+      color: #059669;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #10b981;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Main Headline */
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 850;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      color: #0f172a;
+    }
+
+    h1 span.highlight-green {
+      color: #10b981;
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Subtitle Description */
+    p.subtitle {
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      color: #334155;
+      max-width: 620px;
+      line-height: 1.65;
+      margin-bottom: 36px;
+      font-weight: 450;
+    }
+
+    /* ========================================================
+       Shiny & Elegant Buttons
+       ======================================================== */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 44px;
+      width: 100%;
+    }
+
+    /* Android Shiny Button */
+    .btn-shiny {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 32px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 15px;
+      color: #ffffff;
+      text-decoration: none;
+      background: linear-gradient(135deg, #059669 0%, #10b981 60%, #2cd992 100%);
+      box-shadow: 0 10px 24px -4px rgba(16, 185, 129, 0.45), 0 4px 10px -2px rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    }
+
+    .btn-shiny:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px -4px rgba(16, 185, 129, 0.55), 0 6px 14px -2px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-shiny:active {
+      transform: translateY(0);
+    }
+
+    /* Gleam/Shimmer across Button Surface */
+    .btn-shiny::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: skewX(-24deg);
+      animation: gleamSweep 4.5s ease-in-out infinite;
+    }
+
+    /* Secondary iOS Button */
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 30px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 15px;
+      color: #0f172a;
+      text-decoration: none;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    /* ========================================================
+       Security Guarantee Card
+       ======================================================== */
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 26px 30px;
+      max-width: 540px;
+      width: 100%;
+      text-align: left;
+      box-shadow: 0 10px 30px -6px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.02);
+      transition: border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: #cbd5e1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #ecfdf5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #10b981;
+    }
+
+    .card h3 {
+      color: #0f172a;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      font-size: 13.5px;
+      color: #475569;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: #64748b;
+      position: relative;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Glow -->
+  <div class="ambient-glow"></div>
+
+  <!-- Animated Floating Background Layer -->
+  <div class="floating-layer">
+    <!-- 1. Floating Rotating Clocks -->
+    <div class="clock-circle clock-1">
+      <div class="clock-hand-hour"></div>
+      <div class="clock-hand-min"></div>
+    </div>
+
+    <div class="clock-circle clock-2">
+      <div class="clock-hand-hour"></div>
+      <div class="clock-hand-min"></div>
+    </div>
+
+    <div class="clock-circle clock-3">
+      <div class="clock-hand-hour"></div>
+      <div class="clock-hand-min"></div>
+    </div>
+
+    <!-- 2. Drifting Emerald Hourglasses (Minimal Clean Vector) -->
+    <div class="drifting-hourglass hg-1">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 22h14"></path>
+        <path d="M5 2h14"></path>
+        <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path>
+        <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path>
+      </svg>
+    </div>
+
+    <div class="drifting-hourglass hg-2">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 22h14"></path>
+        <path d="M5 2h14"></path>
+        <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path>
+        <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path>
+      </svg>
+    </div>
+
+    <div class="drifting-hourglass hg-3">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 22h14"></path>
+        <path d="M5 2h14"></path>
+        <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path>
+        <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Core Content -->
+  <main class="content-wrapper">
+    <!-- Tag Badge -->
+    <div class="badge">
+      <span class="badge-dot"></span>
+      ZERO-SERVER PRIVACY GUARANTEE
+    </div>
+
+    <!-- Main Headline -->
+    <h1>
+      Never get trapped by <span class="highlight-green">surprise renewals</span> or expired cutoffs again.
+    </h1>
+
+    <!-- Subtitle Body -->
+    <p class="subtitle">
+      ForgetNot uses Gemini Parse &amp; Discard architecture to extract deadlines from forwarded bills and screenshots directly to your on-device vault.
+    </p>
+
+    <!-- Shiny & Secondary Buttons -->
+    <div class="btn-group">
+      <a href="#" class="btn-shiny">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0002 0-.5515.4482-.9996.9993-.9996.5516 0 .9998.4481.9998.9996 0 .5516-.4482 1.0002-.9998 1.0002m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0002 0-.5515.4482-.9996.9993-.9996.5516 0 .9998.4481.9998.9996 0 .5516-.4482 1.0002-.9998 1.0002m11.4045-6.02l1.996-3.4572c.118-.2046.0478-.466-.1568-.584-.2047-.118-.466-.0479-.584.1568l-2.0254 3.508c-1.6116-.737-3.4246-1.1578-5.3513-1.1578s-3.7397.4208-5.3513 1.1578L4.4093 5.437c-.118-.2047-.3793-.2748-.584-.1568-.2046.118-.2748.3794-.1568.584l1.996 3.4572C2.4938 11.0428.375 14.7335.375 19h23.25c0-4.2665-2.1188-7.9572-5.7455-9.6786"/>
+        </svg>
+        <span>Get on Android (Google Play)</span>
+      </a>
+
+      <a href="#" class="btn-secondary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.87-.93.04-2.03.63-2.67 1.38-.56.65-1.06 1.71-.93 2.74 1.04.08 2.07-.5 2.68-1.25z"/>
+        </svg>
+        <span>Download on iOS</span>
+      </a>
+    </div>
+
+    <!-- Security Guarantee Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h3>Parse &amp; Discard Sovereignty</h3>
+      </div>
+      <p>
+        Your incoming receipts and billing notes are analyzed and immediately discarded from servers. Only your encrypted phone vault holds your reminders.
+      </p>
+    </div>
+  </main>
+
+  <!-- Clean Footer -->
+  <footer>
+    &copy; 2026 ForgetNot. Built for complete deadline peace of mind.
+  </footer>
+
+</body>
+</html>
